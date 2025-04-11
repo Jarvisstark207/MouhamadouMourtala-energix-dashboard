@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENERGIX - Tableau de Bord de Production</title>
+    <!-- Framework CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FullCalendar -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --secondary: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --dark: #1F2937;
+            --light: #F9FAFB;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .sidebar-brand img {
+            height: 40px;
+        }
+        
+        .sidebar-time {
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: #6B7280;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+        
+        .sidebar-menu .nav-link {
+            padding: 0.75rem 1.5rem;
+            color: #1F2937;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        
+        .sidebar-menu .nav-link.active {
+            color: #3B82F6;
+            background-color: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+        }
+        
+        .sidebar-menu .nav-link:hover {
+            background-color: #F3F4F6;
+        }
+        
+        .sidebar-menu .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .header-title h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.25rem;
+        }
+        
+        .header-title p {
+            color: #6B7280;
+            font-size: 0.9rem;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-dropdown {
+            margin-left: 1.5rem;
+        }
+        
+        /* Alert Badge */
+        .alert-badge {
+            position: relative;
+        }
+        
+        .alert-badge .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
+        
+        /* KPI Cards */
+        .kpi-card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            height: 100%;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        
+        .kpi-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .kpi-card .card-title {
+            font-size: 1rem;
+            color: #6B7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .kpi-card .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .kpi-card .card-icon {
+            font-size: 2.5rem;
+            opacity: 0.2;
+            position: absolute;
+            right: 1.5rem;
+            top: 1.5rem;
+        }
+        
+        .kpi-card.solar {
+            border-left: 4px solid var(--warning);
+        }
+        
+        .kpi-card.wind {
+            border-left: 4px solid var(--secondary);
+        }
+        
+        .kpi-card.fossil {
+            border-left: 4px solid var(--danger);
+        }
+        
+        .kpi-card.infrastructure {
+            border-left: 4px solid var(--primary);
+        }
+        
+        /* Trend Indicator */
+        .trend-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .trend-indicator.up {
+            color: var(--secondary);
+        }
+        
+        .trend-indicator.down {
+            color: var(--danger);
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            height: 100%;
+        }
+        
+        .chart-container .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .chart-container .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .chart-container .chart-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-tabs .btn {
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+        
+        /* Alert Card */
+        .alert-card {
+            border-left: 4px solid var(--danger);
+            background-color: #FEF2F2;
+        }
+        
+        .alert-card.warning {
+            border-left: 4px solid var(--warning);
+            background-color: #FFFBEB;
+        }
+        
+        .alert-card.normal {
+            border-left: 4px solid var(--secondary);
+            background-color: #ECFDF5;
+        }
+        
+        /* Data Table */
+        .data-table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        /* Maintenance Card */
+        .maintenance-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+        
+        .maintenance-card .card-header {
+            padding: 1rem 1.5rem;
+            background-color: #F3F4F6;
+            font-weight: 600;
+        }
+        
+        .maintenance-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .maintenance-card .progress {
+            height: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        /* Calendar */
+        #maintenanceCalendar {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .navbar-toggler {
+                display: block;
+            }
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+          }
+          
+          .energix-logo {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #3B82F6; /* Couleur bleue moderne */
+            text-transform: uppercase;
+            position: relative;
+            padding-left: 10px;
+          }
+          
+          .energix-logo::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 5px;
+            bottom: 5px;
+            width: 4px;
+            background: linear-gradient(to bottom, #3B82F6, #10B981); /* Dégradé bleu-vert */
+            border-radius: 2px;
+          }
+          
+          .energix-logo::after {
+            margin-left: 8px;
+            font-size: 24px;
+            color: #F59E0B; /* Couleur jaune/orange */
+          }
+
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo-container">
+            <span class="energix-logo">ENERGIX</span>
+          </div>
+        
+        <div class="sidebar-time">
+            <div><i class="fas fa-clock me-2"></i> <span id="current-time">12:19:50 PM</span></div>
+            <div><i class="fas fa-calendar-alt me-2"></i> <span id="current-date">Sunday, 5 December, 2021</span></div>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-users"></i>
+                        Utilisateurs
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-chart-line"></i>
+                        Suivi production
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-bolt"></i>
+                        Distribution d'énergie
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Paiement & Facturation
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-hard-hat"></i>
+                        Infrastructures
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-file-export"></i>
+                        Rapports & export
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-shield-alt"></i>
+                        Securite
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-bell"></i>
+                        Alertes & Notifications
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-user-cog"></i>
+                        Préférences Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-cog"></i>
+                        Paramètre
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-title">
+                <h1>Tableau de Bord de Production</h1>
+                <p>Supervision en temps réel des infrastructures énergétiques</p>
+            </div>
+            
+            <div class="header-actions">
+                <div class="btn-group">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Aujourd'hui
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Aujourd'hui</a></li>
+                        <li><a class="dropdown-item" href="#">Hier</a></li>
+                        <li><a class="dropdown-item" href="#">Cette semaine</a></li>
+                        <li><a class="dropdown-item" href="#">Ce mois</a></li>
+                        <li><a class="dropdown-item" href="#">Cette année</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#">Période personnalisée</a></li>
+                    </ul>
+                </div>
+                
+                <button class="btn btn-primary ms-3">
+                    <i class="fas fa-sync-alt me-2"></i>
+                    Actualiser
+                </button>
+                
+                <div class="alert-badge ms-3">
+                    <button class="btn btn-light position-relative">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge bg-danger rounded-pill position-absolute">3</span>
+                    </button>
+                </div>
+                
+                <div class="user-dropdown dropdown">
+                    <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-circle me-2"></i>
+                        Mourtala
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> Profil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i> Paramètres</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i> Déconnexion</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alertes -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="alert-card card mb-3">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">Alerte: Centrale Nord</h5>
+                            <p class="card-text mb-0">Surcharge détectée sur le transformateur T2</p>
+                        </div>
+                        <button class="btn btn-sm btn-danger">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Critique
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert-card warning card mb-3">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">Alerte: Parc Éolien</h5>
+                            <p class="card-text mb-0">Baisse de performance sur l'éolienne E5</p>
+                        </div>
+                        <button class="btn btn-sm btn-warning">
+                            <i class="fas fa-exclamation-circle me-1"></i>
+                            Avertissement
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="alert-card normal card mb-3">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">Maintenance planifiée</h5>
+                            <p class="card-text mb-0">Maintenance préventive demain à 10h</p>
+                        </div>
+                        <button class="btn btn-sm btn-success">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Information
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- KPI Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="kpi-card solar card">
+                    <div class="card-body">
+                        <h5 class="card-title">Production Solaire</h5>
+                        <h2 class="card-value">2,350 kWh</h2>
+                        <div class="trend-indicator up">
+                            <i class="fas fa-arrow-up me-1"></i>
+                            <span>43% de la production</span>
+                        </div>
+                        <i class="fas fa-sun card-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card wind card">
+                    <div class="card-body">
+                        <h5 class="card-title">Production Éolienne</h5>
+                        <h2 class="card-value">1,890 kWh</h2>
+                        <div class="trend-indicator up">
+                            <i class="fas fa-arrow-up me-1"></i>
+                            <span>30% de la production</span>
+                        </div>
+                        <i class="fas fa-fan card-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card fossil card">
+                    <div class="card-body">
+                        <h5 class="card-title">Production Fossile</h5>
+                        <h2 class="card-value">471 kWh</h2>
+                        <div class="trend-indicator down">
+                            <i class="fas fa-arrow-down me-1"></i>
+                            <span>20% de la production</span>
+                        </div>
+                        <i class="fas fa-fire card-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card infrastructure card">
+                    <div class="card-body">
+                        <h5 class="card-title">État Infrastructures</h5>
+                        <h2 class="card-value">94%</h2>
+                        <div class="trend-indicator up">
+                            <i class="fas fa-arrow-up me-1"></i>
+                            <span>+2% depuis hier</span>
+                        </div>
+                        <i class="fas fa-hard-hat card-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row 1 -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Production et Consommation Énergétique</h3>
+                        <div class="chart-actions">
+                            <button class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download me-1"></i> PDF
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-file-csv me-1"></i> CSV
+                            </button>
+                            <div class="btn-group ms-2">
+                                <button class="btn btn-sm btn-outline-primary active">Jour</button>
+                                <button class="btn btn-sm btn-outline-primary">Semaine</button>
+                                <button class="btn btn-sm btn-outline-primary">Mois</button>
+                                <button class="btn btn-sm btn-outline-primary">Année</button>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="productionChart" height="300"></canvas>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Répartition par Source</h3>
+                        <div class="chart-actions">
+                            <button class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download me-1"></i> PDF
+                            </button>
+                        </div>
+                    </div>
+                    <canvas id="sourceChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row 2 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Tendances Historiques</h3>
+                        <div class="chart-actions">
+                            <button class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download me-1"></i> PDF
+                            </button>
+                            <div class="btn-group ms-2">
+                                <button class="btn btn-sm btn-outline-primary">2023</button>
+                                <button class="btn btn-sm btn-outline-primary active">2022</button>
+                                <button class="btn btn-sm btn-outline-primary">2021</button>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="historyChart" height="250"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Maintenance Prédictive</h3>
+                        <div class="chart-actions">
+                            <button class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-plus me-1"></i> Planifier
+                            </button>
+                        </div>
+                    </div>
+                    <div class="maintenance-card card">
+                        <div class="card-header">
+                            Équipements nécessitant une intervention
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">Transformateur T2 - Centrale Nord</h6>
+                            <div class="progress">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <p class="card-text small">Probabilité de panne: 85% - Recommandation: Remplacement immédiat</p>
+                            
+                            <h6 class="card-title mt-3">Éolienne E5 - Parc Est</h6>
+                            <div class="progress">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <p class="card-text small">Probabilité de panne: 65% - Recommandation: Maintenance préventive</p>
+                            
+                            <h6 class="card-title mt-3">Panneaux Secteur B</h6>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 45%" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <p class="card-text small">Probabilité de panne: 45% - Surveiller performance</p>
+                            
+                            <button class="btn btn-primary btn-sm mt-3">
+                                <i class="fas fa-file-pdf me-1"></i> Générer Rapport
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Tables -->
+        <div class="row">
+            <div class="col-md-7">
+                <div class="data-table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3>Données de Production Récentes</h3>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary me-2">
+                                <i class="fas fa-filter me-1"></i> Filtres
+                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-file-excel me-1"></i> Excel
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-file-csv me-1"></i> CSV
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-file-pdf me-1"></i> PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Source</th>
+                                    <th>Production (kWh)</th>
+                                    <th>Efficacité</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>05/12/2023 08:00</td>
+                                    <td><span class="badge bg-warning text-dark">Solaire</span></td>
+                                    <td>1,250</td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-warning" style="width: 92%"></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-success">Normal</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>05/12/2023 08:00</td>
+                                    <td><span class="badge bg-success">Éolienne</span></td>
+                                    <td>890</td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-success" style="width: 87%"></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-warning text-dark">Alerte</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>05/12/2023 08:00</td>
+                                    <td><span class="badge bg-danger">Fossile</span></td>
+                                    <td>420</td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-danger" style="width: 76%"></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-danger">Critique</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>04/12/2023 20:00</td>
+                                    <td><span class="badge bg-warning text-dark">Solaire</span></td>
+                                    <td>0</td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-secondary">Nuit</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>04/12/2023 20:00</td>
+                                    <td><span class="badge bg-success">Éolienne</span></td>
+                                    <td>1,120</td>
+                                    <td>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-success" style="width: 91%"></div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge bg-success">Normal</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">Précédent</a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">Suivant</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            
+            <div class="col-md-5">
+                <div class="data-table-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3>Planification des Coupures</h3>
+                        <button class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-1"></i> Nouvelle Coupure
+                        </button>
+                    </div>
+                    
+                    <div id="maintenanceCalendar"></div>
+                    
+                    <div class="mt-3">
+                        <h5 class="mb-3">Prochaines Coupures Programées</h5>
+                        <div class="list-group">
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Maintenance Réseau Nord</h6>
+                                    <small class="text-danger">07/12/2023</small>
+                                </div>
+                                <p class="mb-1 small">08:00 - 12:00 - Zone affectée: Secteurs A, B, C</p>
+                                <small><i class="fas fa-users me-1"></i> 1,250 clients impactés</small>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Mise à Jour Système</h6>
+                                    <small class="text-danger">10/12/2023</small>
+                                </div>
+                                <p class="mb-1 small">00:00 - 04:00 - Tous les secteurs</p>
+                                <small><i class="fas fa-users me-1"></i> Tous clients impactés</small>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Remplacement Transformateur</h6>
+                                    <small class="text-warning">15/12/2023</small>
+                                </div>
+                                <p class="mb-1 small">09:00 - 17:00 - Zone affectée: Secteur D</p>
+                                <small><i class="fas fa-users me-1"></i> 450 clients impactés</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/fr.js"></script>
+    
+    <script>
+        // Mise à jour de l'heure et date en temps réel
+        function updateDateTime() {
+            const now = new Date();
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            
+            document.getElementById('current-time').textContent = now.toLocaleTimeString('fr-FR', timeOptions);
+            document.getElementById('current-date').textContent = now.toLocaleDateString('fr-FR', dateOptions);
+        }
+        
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+        
+        // Initialisation des graphiques
+        document.addEventListener('DOMContentLoaded', function() {
+            // Graphique de production
+            const productionCtx = document.getElementById('productionChart').getContext('2d');
+            const productionChart = new Chart(productionCtx, {
+                type: 'line',
+                data: {
+                    labels: ['00h', '04h', '08h', '12h', '16h', '20h'],
+                    datasets: [
+                        {
+                            label: 'Production Totale',
+                            data: [1200, 1800, 2500, 3200, 2800, 2100],
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Consommation',
+                            data: [1000, 1500, 2200, 3000, 2600, 1900],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'kWh'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Graphique de répartition
+            const sourceCtx = document.getElementById('sourceChart').getContext('2d');
+            const sourceChart = new Chart(sourceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Solaire', 'Éolienne', 'Fossile'],
+                    datasets: [{
+                        data: [45, 35, 20],
+                        backgroundColor: [
+                            '#F59E0B',
+                            '#10B981',
+                            '#EF4444'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.raw}%`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+            
+            // Graphique historique
+            const historyCtx = document.getElementById('historyChart').getContext('2d');
+            const historyChart = new Chart(historyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [
+                        {
+                            label: '2022',
+                            data: [32000, 34000, 36000, 38000, 40000, 42000, 44000, 46000, 48000, 50000, 52000, 54000],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: '#3B82F6',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '2021',
+                            data: [30000, 32000, 34000, 36000, 38000, 40000, 42000, 44000, 46000, 48000, 50000, 52000],
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: '#10B981',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'kWh'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Calendrier de maintenance
+            const calendarEl = document.getElementById('maintenanceCalendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'fr',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                events: [
+                    {
+                        title: 'Maintenance Réseau Nord',
+                        start: '2023-12-07',
+                        end: '2023-12-07',
+                        color: '#EF4444'
+                    },
+                    {
+                        title: 'Mise à Jour Système',
+                        start: '2023-12-10',
+                        end: '2023-12-10',
+                        color: '#EF4444'
+                    },
+                    {
+                        title: 'Remplacement Transformateur',
+                        start: '2023-12-15',
+                        end: '2023-12-15',
+                        color: '#F59E0B'
+                    }
+                ]
+            });
+            calendar.render();
+            
+            // Simulation de notifications
+            function simulateAlert() {
+                const alertSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3');
+                alertSound.play();
+                
+                // Ici vous pourriez ajouter une notification visuelle
+            }
+            
+            // Simuler une alerte toutes les 2 minutes (pour démo)
+            // setInterval(simulateAlert, 120000);
+        });
+    </script>
+</body>
+</html>
